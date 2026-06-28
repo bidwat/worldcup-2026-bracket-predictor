@@ -406,7 +406,40 @@
     APP.querySelector("#clearAll").addEventListener("click", function () { state.editing.picks = {}; state.dirty = true; renderEditor(); });
     APP.querySelector("#randomFill").addEventListener("click", randomize);
     APP.querySelector("#saveBtn").addEventListener("click", function () { saveCurrent(true); });
-    APP.querySelector("#shareBtn").addEventListener("click", function () { var rec = saveCurrent(false); if (rec) openShareModal(rec); });
+    APP.querySelector("#shareBtn").addEventListener("click", shareFlow);
+  }
+
+  // Saving & sharing requires a name — prompt for one if it's still blank.
+  function shareFlow() {
+    var name = (state.editing.name || "").trim();
+    if (name) { openShareModal(saveCurrent(false)); return; }
+    promptName(function (chosen) {
+      state.editing.name = chosen;
+      var nameEl = APP.querySelector("#bracketName");
+      if (nameEl) nameEl.value = chosen;
+      openShareModal(saveCurrent(false));
+    });
+  }
+
+  function promptName(onName) {
+    openModal(
+      '<button class="close-x" aria-label="Close">' + ic("fa-solid fa-xmark") + "</button>" +
+      "<h3>Name your bracket</h3>" +
+      '<p class="sub">Give it a name so friends know whose picks they’re looking at.</p>' +
+      '<div class="urlbox"><input id="nameField" maxlength="40" placeholder="e.g. Sam’s Picks" /></div>' +
+      '<div class="modal-actions"><button class="btn ghost" data-close="1" type="button">Cancel</button>' +
+      '<button class="btn primary" id="nameGo" type="button">' + ic("fa-solid fa-share-nodes") + " Save &amp; share</button></div>"
+    );
+    var inp = MODAL_CARD.querySelector("#nameField");
+    inp.focus();
+    function submit() {
+      var v = (inp.value || "").trim();
+      if (!v) { inp.style.borderColor = "var(--bad)"; inp.focus(); toast("Please enter a name.", "bad"); return; }
+      closeModal();
+      onName(WC.trimName(v));
+    }
+    MODAL_CARD.querySelector("#nameGo").addEventListener("click", submit);
+    inp.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); submit(); } });
   }
 
   function bindBoard(mode) {
