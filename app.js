@@ -801,7 +801,7 @@
       }
 
       // footer — short URL so the link travels with the image
-      txt("wc.bidwat.com", W / 2, H - 28, "800 26px " + SANS, C.primary2, "center");
+      txt("wc.bidwat.com", W / 2, H - 26, "500 18px " + SANS, C.muted, "center");
     }
 
     // Make sure the flag webfont is actually fetched (pass a flag glyph so the
