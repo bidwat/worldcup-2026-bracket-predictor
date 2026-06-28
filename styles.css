@@ -17,6 +17,7 @@
   --good-bg: rgba(34, 197, 94, .16);
   --bad: #f43f5e;
   --bad-bg: rgba(244, 63, 94, .15);
+  --gold: #f5c64b;
   --radius: 14px;
   --radius-sm: 10px;
   --shadow: 0 18px 44px rgba(0, 0, 0, .42);
@@ -188,6 +189,16 @@ small { color: var(--muted); }
 .bslot.advanced { border-left-color: color-mix(in srgb, var(--good) 50%, transparent); }
 .bslot.advanced .mk { color: var(--good); font-size: 9px; }
 .bslot.elim { opacity: .42; }
+.bslot.champion .nm { color: var(--gold); }
+.champ-trophy { color: var(--gold); filter: drop-shadow(0 0 5px rgba(245, 198, 75, .9)); animation: trophyGlow 1.8s ease-in-out infinite; }
+@keyframes trophyGlow { 0%, 100% { filter: drop-shadow(0 0 3px rgba(245, 198, 75, .55)); } 50% { filter: drop-shadow(0 0 8px rgba(245, 198, 75, 1)); } }
+
+/* Cue the user to pick the final winner once both finalists are set */
+.bmatch.final-cue { border-color: var(--gold); animation: finalPulse 1.5s ease-in-out infinite; overflow: visible; }
+@keyframes finalPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(245, 198, 75, 0); } 50% { box-shadow: 0 0 0 5px rgba(245, 198, 75, .3); } }
+.final-cue-tip { position: absolute; top: -32px; left: 50%; transform: translateX(-50%); white-space: nowrap; background: var(--gold); color: #2a1e02; font-size: 11px; font-weight: 800; padding: 4px 10px; border-radius: 999px; display: flex; gap: 6px; align-items: center; box-shadow: var(--shadow-sm); }
+.final-cue-tip::after { content: ""; position: absolute; bottom: -5px; left: 50%; transform: translateX(-50%) rotate(45deg); width: 8px; height: 8px; background: var(--gold); }
+
 .bslot.tbd-pick { cursor: pointer; }
 .bslot.tbd-pick .nm { color: var(--text); font-style: normal; }
 .bslot.tbd-pick .mk { color: var(--primary-2); }

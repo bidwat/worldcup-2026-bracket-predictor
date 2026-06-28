@@ -215,7 +215,8 @@
     }).join("");
 
     var cards = WC.MATCHES.map(function (m) {
-      return '<div class="bmatch" style="left:' + X(m.id) + "px;top:" + Y(m.id) + "px;width:" + CARD_W + 'px">' +
+      var cue = isFinalCue(m, resolved, mode) ? " final-cue" : "";
+      return '<div class="bmatch' + cue + '" style="left:' + X(m.id) + "px;top:" + Y(m.id) + "px;width:" + CARD_W + 'px">' +
         matchInner(m, resolved, scored, mode) + "</div>";
     }).join("");
 
@@ -226,9 +227,18 @@
       cards + "</div></div>";
   }
 
+  // The final, once both finalists are set but no winner is picked yet.
+  function isFinalCue(m, resolved, mode) {
+    if (mode !== "edit" || m.id !== 104) return false;
+    var rm = resolved[104];
+    return !!(rm && rm.a && rm.b) && !pickSource()[104];
+  }
+
   function matchInner(m, resolved, scored, mode) {
     var locked = WC.isLocked(m.id);
-    return '<div class="bm-head"><span>' + esc(m.date) + "</span>" +
+    var cue = isFinalCue(m, resolved, mode)
+      ? '<div class="final-cue-tip">' + ic("fa-solid fa-hand-pointer") + " Tap your champion</div>" : "";
+    return cue + '<div class="bm-head"><span>' + esc(m.date) + "</span>" +
       (locked ? '<span class="ft">FT</span>' : "<span></span>") + "</div>" +
       slotBtn(m, "a", resolved, scored, locked, mode) +
       slotBtn(m, "b", resolved, scored, locked, mode);
@@ -245,15 +255,19 @@
     if (!code) classes.push("tbd");
     if (chosen) classes.push("chosen");
 
+    var isChamp = m.id === 104 && chosen; // the predicted champion
+    var trophy = '<span class="champ-trophy">' + ic("fa-solid fa-trophy") + "</span>";
+
     if (grade.actual != null && code) {
       var actualWinner = code === grade.actual;
       if (chosen) {
-        if (actualWinner) { classes = ["bslot", "correct"]; mk = ic("fa-solid fa-check"); }
+        if (actualWinner) { classes = ["bslot", "correct"]; mk = isChamp ? trophy : ic("fa-solid fa-check"); if (isChamp) classes.push("champion"); }
         else { classes = ["bslot", "wrong"]; mk = ic("fa-solid fa-xmark"); }
       } else if (actualWinner) { classes = ["bslot", "advanced"]; mk = "through"; }
       else { classes.push("elim"); }
     } else if (chosen) {
-      mk = ic("fa-solid fa-circle-check");
+      if (isChamp) { classes.push("champion"); mk = trophy; }
+      else mk = ic("fa-solid fa-circle-check");
     }
 
     var editable = mode === "edit" && code && !locked;
@@ -684,14 +698,17 @@
         try { ctx.letterSpacing = "2px"; } catch (e) {}
         txt("PREDICTED CHAMPION", W / 2, cy, "700 20px " + SANS, C.muted, "center");
         try { ctx.letterSpacing = "0px"; } catch (e) {}
-        cy += 48;
+        cy += 50;
         var flag = WC.team(champ).flag, nm = WC.team(champ).name;
-        var nameFont = "800 50px " + SANS, flagFont = "46px " + FLAG;
+        var nameFont = "800 48px " + SANS, flagFont = "42px " + FLAG, trFont = "40px " + EMOJI;
+        ctx.font = trFont; var tw = ctx.measureText("🏆").width;
         ctx.font = flagFont; var fw = ctx.measureText(flag).width;
         ctx.font = nameFont; var nw = ctx.measureText(nm).width;
-        var gap = 18, sx = (W - (fw + gap + nw)) / 2;
-        txt(flag, sx, cy, flagFont, C.text, "left", "middle");
-        txt(nm, sx + fw + gap, cy, nameFont, C.primary2, "left", "middle");
+        var gp = 16, sx = (W - (tw + gp + fw + gp + nw)) / 2;
+        ctx.save(); ctx.shadowColor = "rgba(255,205,50,0.95)"; ctx.shadowBlur = 24;
+        txt("🏆", sx, cy, trFont, "#ffd24d", "left", "middle"); ctx.restore();
+        txt(flag, sx + tw + gp, cy, flagFont, C.text, "left", "middle");
+        txt(nm, sx + tw + gp + fw + gp, cy, nameFont, "#ffd76a", "left", "middle");
         var cg = scored.perMatch[104].grade;
         if (cg !== "pending") { cy += 32; txt(cg === "correct" ? "✓ Champion called" : "✗ Eliminated", W / 2, cy, "700 22px " + SANS, cg === "correct" ? C.good : C.bad, "center"); cy += 14; }
         else { cy += 22; }
@@ -701,76 +718,76 @@
         cy += 16;
       }
 
-      // ---- bracket: Round of 16 -> Final (large fonts for mobile) ----
-      function rowsFrom(startKey) {
-        var rows = {}, n = 0;
-        (function rec(id) {
-          var m = WC.matchById(id);
-          if (m.round === startKey) { rows[id] = n++; return rows[id]; }
-          var k = []; ["a", "b"].forEach(function (s) { if (m[s].win != null) k.push(m[s].win); });
-          if (!k.length) { rows[id] = n++; return rows[id]; }
-          var cr = k.map(rec);
-          rows[id] = (Math.min.apply(null, cr) + Math.max.apply(null, cr)) / 2;
-          return rows[id];
-        })(104);
-        return rows;
-      }
-      var rows = rowsFrom("R16"), maxRow = 7;
-      var CW = 232, GAP = 42, HH = 28, SH = 46, CH = HH + 2 * SH;
-      var boardW = 3 * (CW + GAP) + CW;
-      var footerH = 84;
-      var areaX = (W - boardW) / 2, areaY = cy + 22, areaH = H - footerH - areaY;
-      var RU = (areaH - CH) / maxRow;
-      function bx(id) { return areaX + (ROUND_INDEX[WC.matchById(id).round] - 1) * (CW + GAP); }
-      function by(id) { return areaY + rows[id] * RU; }
-      var matches = WC.MATCHES.filter(function (m) { return m.round !== "R32"; });
+      // ---- full bracket: Round of 32 -> Final. The sparse later rounds overlap
+      //      leftward into the whitespace so the whole 32-team tree fits big. ----
+      var GOLD = "#ffce4d";
+      var CW = 246, OV = 72, GAP = 14, HH = 22, SH = 34, CH = HH + 2 * SH;
+      var colStep = [0, CW + GAP, CW - OV, CW - OV, CW - OV];
+      var colX = []; (function () { var x = 0; for (var i = 0; i < 5; i++) { x += colStep[i]; colX[i] = x; } })();
+      var boardW = colX[4] + CW;
+      var footerH = 64;
+      var areaX = (W - boardW) / 2, areaY = cy + 18, areaH = H - footerH - areaY;
+      var RU = (areaH - CH) / MAX_ROW;
+      function bx(id) { return areaX + colX[ROUND_INDEX[WC.matchById(id).round]]; }
+      function by(id) { return areaY + ROW_OF[id] * RU; }
 
-      // connectors (skip Round-of-32 feeders — not drawn here)
-      ctx.strokeStyle = C.line; ctx.lineWidth = 2; ctx.lineJoin = "round";
-      matches.forEach(function (m) {
+      // connectors first, so overlapping cards sit on top of them
+      ctx.strokeStyle = C.line; ctx.lineWidth = 2.5; ctx.lineCap = "round";
+      WC.MATCHES.forEach(function (m) {
         ["a", "b"].forEach(function (side) {
           if (m[side].win == null) return;
-          var c = m[side].win; if (rows[c] == null) return;
-          var x1 = bx(c) + CW, y1 = by(c) + CH / 2, x2 = bx(m.id), y2 = by(m.id) + CH / 2, mx = (x1 + x2) / 2;
-          ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(mx, y1); ctx.lineTo(mx, y2); ctx.lineTo(x2, y2); ctx.stroke();
+          var c = m[side].win;
+          var x1 = bx(c) + CW, y1 = by(c) + CH / 2, x2 = bx(m.id), y2 = by(m.id) + CH / 2;
+          ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
         });
       });
 
       // cards
-      matches.forEach(function (m) {
+      WC.MATCHES.forEach(function (m) {
         var x = bx(m.id), y = by(m.id), rm = resolved[m.id], grade = scored.perMatch[m.id];
-        ctx.fillStyle = C.panel; rr(x, y, CW, CH, 14); ctx.fill();
-        ctx.strokeStyle = C.line; ctx.lineWidth = 1.5; ctx.stroke();
-        txt(WC.round(m.round).name + " · " + m.date, x + 15, y + HH / 2, "700 14px " + SANS, C.muted, "left", "middle");
-        if (WC.isLocked(m.id)) txt("FT", x + CW - 15, y + HH / 2, "800 13px " + SANS, C.good, "right", "middle");
+        var isFinal = m.id === 104;
+        ctx.fillStyle = C.panel; rr(x, y, CW, CH, 13); ctx.fill();
+        if (isFinal) {
+          ctx.save(); ctx.shadowColor = "rgba(255,190,40,0.55)"; ctx.shadowBlur = 26;
+          ctx.strokeStyle = GOLD; ctx.lineWidth = 2.5; rr(x, y, CW, CH, 13); ctx.stroke(); ctx.restore();
+        } else {
+          ctx.strokeStyle = C.line; ctx.lineWidth = 1.5; rr(x, y, CW, CH, 13); ctx.stroke();
+        }
+        txt(isFinal ? "FINAL" : WC.round(m.round).name, x + 13, y + HH / 2, "800 12px " + SANS, isFinal ? GOLD : C.muted, "left", "middle");
+        if (WC.isLocked(m.id)) txt("FT", x + CW - 13, y + HH / 2, "800 11px " + SANS, C.good, "right", "middle");
         ctx.strokeStyle = C.line; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(x, y + HH); ctx.lineTo(x + CW, y + HH); ctx.stroke();
-        drawSlot(m, "a", x, y + HH, rm, grade, CW, SH);
-        drawSlot(m, "b", x, y + HH + SH, rm, grade, CW, SH);
-        ctx.strokeStyle = C.line; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(x, y + HH + SH); ctx.lineTo(x + CW, y + HH + SH); ctx.stroke();
+        drawSlot(m, "a", x, y + HH, rm, grade, CW, SH, isFinal);
+        drawSlot(m, "b", x, y + HH + SH, rm, grade, CW, SH, isFinal);
       });
 
-      function drawSlot(m, side, x, sy, rm, grade, w, sh) {
+      function drawSlot(m, side, x, sy, rm, grade, w, sh, isFinal) {
         var code = rm[side], chosen = picks[m.id] === side;
-        var bar = null, nameColor = C.text, mark = null, markColor = C.muted;
+        var bar = null, nameColor = C.text, mark = null, markColor = C.muted, trophy = false;
         if (grade.actual != null && code) {
           var aw = code === grade.actual;
           if (chosen) { if (aw) { bar = C.good; mark = "✓"; markColor = C.good; } else { bar = C.bad; mark = "✗"; markColor = C.bad; } }
           else if (aw) { mark = "›"; markColor = C.good; }
           else { nameColor = C.muted; }
         } else if (chosen) { bar = C.primary; mark = "✓"; markColor = C.primary2; }
+        if (isFinal && chosen) { trophy = true; bar = GOLD; }       // champion → glowing trophy
         var cyr = sy + sh / 2;
         if (bar) { ctx.fillStyle = bar; ctx.fillRect(x, sy, 5, sh); }
-        if (code) txt(WC.team(code).flag, x + 14, cyr, "28px " + FLAG, C.text, "left", "middle");
-        else txt("·", x + 22, cyr, "22px " + SANS, C.muted, "left", "middle");
+        if (code) txt(WC.team(code).flag, x + 13, cyr, "25px " + FLAG, C.text, "left", "middle");
+        else txt("·", x + 20, cyr, "20px " + SANS, C.muted, "left", "middle");
         var nm = code ? WC.team(code).name : slotLabel(m, side, resolved);
-        var nf = (code ? "700 " : "600 ") + "23px " + SANS;
-        txt(ellip(nm, nf, w - 52 - 22), x + 52, cyr, nf, code ? nameColor : C.muted, "left", "middle");
-        if (mark) txt(mark, x + w - 14, cyr, "800 23px " + SANS, markColor, "right", "middle");
+        var nf = (code ? (chosen ? "800 " : "700 ") : "600 ") + "20px " + SANS;
+        var nameCol = code ? (trophy ? GOLD : nameColor) : C.muted;
+        txt(ellip(nm, nf, w - 48 - 26), x + 48, cyr, nf, nameCol, "left", "middle");
+        if (trophy) {
+          ctx.save(); ctx.shadowColor = "rgba(255,205,50,0.95)"; ctx.shadowBlur = 16;
+          txt("🏆", x + w - 14, cyr, "22px " + EMOJI, GOLD, "right", "middle"); ctx.restore();
+        } else if (mark) {
+          txt(mark, x + w - 13, cyr, "800 20px " + SANS, markColor, "right", "middle");
+        }
       }
 
-      // footer — just the short URL, so the link still travels with the image
-      // (Instagram can't auto-attach a tappable link sticker from the web).
-      txt("wc.bidwat.com", W / 2, H - 34, "800 26px " + SANS, C.primary2, "center");
+      // footer — short URL so the link travels with the image
+      txt("wc.bidwat.com", W / 2, H - 28, "800 26px " + SANS, C.primary2, "center");
     }
 
     // Make sure the flag webfont is actually fetched (pass a flag glyph so the
