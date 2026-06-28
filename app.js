@@ -52,6 +52,24 @@
 
   var state = { view: "home", editing: null, ro: null, dirty: false };
 
+  // ------------------------------------------------------------ analytics (GA4)
+  // No script loads and no events fire unless a Measurement ID is configured.
+  function initAnalytics() {
+    var id = ((WC_DATA.analytics && WC_DATA.analytics.ga4Id) || "").trim();
+    if (!id) return;
+    var s = document.createElement("script");
+    s.async = true;
+    s.src = "https://www.googletagmanager.com/gtag/js?id=" + encodeURIComponent(id);
+    document.head.appendChild(s);
+    window.dataLayer = window.dataLayer || [];
+    window.gtag = function () { window.dataLayer.push(arguments); };
+    window.gtag("js", new Date());
+    window.gtag("config", id); // fires the initial page_view = a site open
+  }
+  function track(name, params) {
+    try { if (window.gtag) window.gtag("event", name, params || {}); } catch (e) {}
+  }
+
   // ------------------------------------------------------------ helpers
   function esc(s) {
     return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
@@ -341,6 +359,7 @@
     else if (act === "share") openShareModal(rec);
     else if (act === "copy") {
       var copy = WC.upsertBracket({ name: rec.name + " (my copy)", picks: Object.assign({}, rec.picks), mine: true });
+      track("bracket_created", { source: "copy", complete: WC.isComplete(copy.picks), picks: WC.pickCount(copy.picks) });
       toast("Copied to your brackets — now editable.", "good");
       openEditor(copy);
     } else if (act === "delete") {
@@ -457,9 +476,11 @@
 
   function saveCurrent(notify) {
     var b = state.editing;
+    var isNew = !b.id;
     if (!b.name || !b.name.trim()) { b.name = "My bracket"; var n = APP.querySelector("#bracketName"); if (n) n.value = b.name; }
     var rec = WC.upsertBracket({ id: b.id, name: WC.trimName(b.name.trim()), picks: b.picks, mine: true });
     state.editing.id = rec.id; state.dirty = false;
+    if (isNew) track("bracket_created", { source: "editor", complete: WC.isComplete(b.picks), picks: WC.pickCount(b.picks) });
     if (notify) { toast("Saved to this browser.", "good"); renderEditor(); }
     return rec;
   }
@@ -529,6 +550,7 @@
     reddit: "fa-brands fa-reddit-alien", email: "fa-solid fa-envelope"
   };
   function openShareModal(rec) {
+    track("bracket_shared", { complete: WC.isComplete(rec.picks), picks: WC.pickCount(rec.picks) });
     var url = WC.buildShareUrl(rec);
     var champ = WC.champion(rec.picks);
     var channels = WC.shareChannels(url, rec.name, champ ? teamName(champ) : "");
@@ -549,11 +571,17 @@
       "</div>"
     );
     MODAL_CARD.querySelector("#copyUrl").addEventListener("click", function () {
+      track("share_channel", { method: "copy" });
       copyText(url).then(function (ok) { toast(ok ? "Link copied!" : "Press Ctrl+C to copy.", ok ? "good" : "bad"); });
     });
     MODAL_CARD.querySelector("#shareUrl").addEventListener("focus", function (e) { e.target.select(); });
+    MODAL_CARD.querySelectorAll(".share-btn[data-ch]").forEach(function (el) {
+      if (el.dataset.ch === "more") return;
+      el.addEventListener("click", function () { track("share_channel", { method: el.dataset.ch }); });
+    });
     var nb = MODAL_CARD.querySelector("#nativeShare");
     if (nb) nb.addEventListener("click", function () {
+      track("share_channel", { method: "native" });
       navigator.share({ title: rec.name, text: "My World Cup 2026 bracket", url: url }).catch(function () {});
     });
   }
@@ -645,6 +673,7 @@
 
   // ------------------------------------------------------------ boot
   function boot() {
+    initAnalytics();
     handleIncoming();
     render();
     if (WC.feedActive()) {

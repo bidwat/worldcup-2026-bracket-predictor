@@ -34,6 +34,15 @@ window.WC_DATA = {
   // Used only when feed.type === "json". Must return: {updated, results:{matchId:teamCode}}.
   resultsUrl: "",
 
+  // Optional, privacy-friendly usage analytics via Google Analytics 4.
+  // Paste your GA4 Measurement ID (looks like "G-XXXXXXXXXX") to enable:
+  //   • page_view        — counts how many times the site is opened
+  //   • bracket_created  — a new bracket was saved
+  //   • bracket_shared   — the share dialog was opened (with per-channel detail)
+  // GA4 reports unique visitors and country/city but NOT raw IP addresses.
+  // Leave blank to disable tracking completely (the app loads no GA script).
+  analytics: { ga4Id: "" },
+
   rounds: [
     { key: "R32", name: "Round of 32",     pts: 1 },
     { key: "R16", name: "Round of 16",     pts: 2 },

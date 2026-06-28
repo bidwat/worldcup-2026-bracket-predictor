@@ -71,6 +71,26 @@ The default source is **TheSportsDB's** free, keyless, CORS-enabled World Cup en
 - **Custom source:** set `feed.type: "json"` and point `resultsUrl` at any CORS-enabled endpoint returning `{ "updated": "…", "results": { "73": "CAN" } }` (match id → team code).
 - **Manual:** **Enter results** lets you set any winner by hand — handy for a private pool or penalty-shootout games. It re-scores every saved bracket instantly.
 
+## Usage analytics (optional)
+
+The app can report privacy-friendly usage metrics through **Google Analytics 4** — disabled by default. To turn it on, paste your GA4 Measurement ID into `data.js`:
+
+```js
+analytics: { ga4Id: "G-XXXXXXXXXX" }
+```
+
+When set, it tracks:
+
+| Signal | GA event | Answers |
+|--------|----------|---------|
+| Site opened | `page_view` | How many times / unique visitors / country & city |
+| Bracket created | `bracket_created` | How many brackets are built (editor + copies) |
+| Bracket shared | `bracket_shared` + `share_channel` | How often brackets are shared, and via which channel |
+
+With no ID set, **no Google script loads and nothing is tracked**. GA4 reports unique visitors and approximate location (country/city) but **not raw IP addresses** — capturing actual IPs would require a small serverless endpoint, which this project intentionally avoids.
+
+**Getting an ID:** create a free GA4 property at [analytics.google.com](https://analytics.google.com) → add a **Web** data stream for your site URL → copy the **Measurement ID** (`G-…`). If you serve to EU visitors, add a cookie-consent banner to stay GDPR-compliant.
+
 ## Project structure
 
 | File | Purpose |
