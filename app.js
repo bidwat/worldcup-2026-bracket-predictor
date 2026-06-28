@@ -721,24 +721,38 @@
       // ---- full bracket: Round of 32 -> Final. The sparse later rounds overlap
       //      leftward into the whitespace so the whole 32-team tree fits big. ----
       var GOLD = "#ffce4d";
-      var CW = 246, OV = 72, GAP = 14, HH = 22, SH = 34, CH = HH + 2 * SH;
-      var colStep = [0, CW + GAP, CW - OV, CW - OV, CW - OV];
-      var colX = []; (function () { var x = 0; for (var i = 0; i < 5; i++) { x += colStep[i]; colX[i] = x; } })();
-      var boardW = colX[4] + CW;
+      var CW = 244, GAP = 22, HH = 22, SH = 34, CH = HH + 2 * SH;
+      var ncol = 4; // R32, R16, QF, SF — the Final is nested into the SF column
+      var boardW = (ncol - 1) * (CW + GAP) + CW;
       var footerH = 64;
       var areaX = (W - boardW) / 2, areaY = cy + 18, areaH = H - footerH - areaY;
       var RU = (areaH - CH) / MAX_ROW;
-      function bx(id) { return areaX + colX[ROUND_INDEX[WC.matchById(id).round]]; }
+      function colOf(m) { return m.id === 104 ? 3 : ROUND_INDEX[m.round]; }
+      function bx(id) { return areaX + colOf(WC.matchById(id)) * (CW + GAP); }
       function by(id) { return areaY + ROW_OF[id] * RU; }
 
-      // connectors first, so overlapping cards sit on top of them
-      ctx.strokeStyle = C.line; ctx.lineWidth = 2.5; ctx.lineCap = "round";
+      // connectors — right angles only, drawn first so cards sit on top
+      ctx.strokeStyle = C.line; ctx.lineWidth = 3; ctx.lineJoin = "round"; ctx.lineCap = "butt";
       WC.MATCHES.forEach(function (m) {
+        if (m.id === 104) {
+          // Final sits between the two semifinals: a straight vertical line comes
+          // down from the upper semi and up from the lower semi to meet it.
+          var fTop = by(104), fBot = by(104) + CH;
+          ["a", "b"].forEach(function (side) {
+            var c = m[side].win; if (c == null) return;
+            var scx = bx(c) + CW / 2;
+            ctx.beginPath();
+            if (by(c) < fTop) { ctx.moveTo(scx, by(c) + CH); ctx.lineTo(scx, fTop); }
+            else { ctx.moveTo(scx, by(c)); ctx.lineTo(scx, fBot); }
+            ctx.stroke();
+          });
+          return;
+        }
         ["a", "b"].forEach(function (side) {
           if (m[side].win == null) return;
           var c = m[side].win;
-          var x1 = bx(c) + CW, y1 = by(c) + CH / 2, x2 = bx(m.id), y2 = by(m.id) + CH / 2;
-          ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+          var x1 = bx(c) + CW, y1 = by(c) + CH / 2, x2 = bx(m.id), y2 = by(m.id) + CH / 2, mx = (x1 + x2) / 2;
+          ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(mx, y1); ctx.lineTo(mx, y2); ctx.lineTo(x2, y2); ctx.stroke();
         });
       });
 
