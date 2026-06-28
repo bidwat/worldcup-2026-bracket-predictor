@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0a0f1e" />
+  <title>World Cup 2026 — Bracket Predictor</title>
+  <meta name="description" content="Predict the FIFA World Cup 2026 knockout bracket, share it with friends, and track who called it right." />
+
+  <!-- Theme: apply saved preference before first paint to avoid a flash -->
+  <script>
+    (function () {
+      try {
+        var t = localStorage.getItem("wc_theme");
+        if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t);
+        else if (window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches)
+          document.documentElement.setAttribute("data-theme", "light");
+      } catch (e) {}
+    })();
+  </script>
+
+  <!-- Country-flag font so flag emoji render on Windows too -->
+  <style>
+    @font-face {
+      font-family: "Twemoji Country Flags";
+      unicode-range: U+1F1E6-1F1FF, U+1F3F4, U+E0062-E007F;
+      src: url("https://cdn.jsdelivr.net/npm/country-flag-emoji-polyfill@0.1.8/dist/TwemojiCountryFlags.woff2") format("woff2");
+      font-display: swap;
+    }
+  </style>
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.2/css/all.min.css" />
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8F%86%3C/text%3E%3C/svg%3E" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <button class="brand" id="navHome" type="button" aria-label="Home">
+        <span class="brand-mark"><i class="fa-solid fa-trophy"></i></span>
+        <span class="brand-text">World Cup <b>2026</b><small>Bracket Predictor</small></span>
+      </button>
+      <nav class="topnav">
+        <button class="nav-btn" data-view="home" type="button"><i class="fa-solid fa-table-list"></i><span>My Brackets</span></button>
+        <button class="nav-btn" data-view="compare" type="button"><i class="fa-solid fa-ranking-star"></i><span>Compare</span></button>
+        <button class="icon-btn" id="themeToggle" type="button" aria-label="Toggle theme"><i class="fa-solid fa-moon"></i></button>
+        <button class="nav-btn primary" id="newBracketBtn" type="button"><i class="fa-solid fa-plus"></i><span>New bracket</span></button>
+      </nav>
+    </div>
+    <div class="datastrip" id="dataStrip"></div>
+  </header>
+
+  <main id="app" class="app"></main>
+
+  <div class="modal-host" id="modalHost" hidden>
+    <div class="modal-backdrop" data-close="1"></div>
+    <div class="modal" role="dialog" aria-modal="true" id="modalCard"></div>
+  </div>
+
+  <div class="toast-host" id="toastHost" aria-live="polite"></div>
+
+  <footer class="appfoot">
+    <span id="footUpdated"></span>
+    <span class="dot">·</span>
+    <span>&copy; Bidwat Pokhrel, 2026</span>
+  </footer>
+
+  <script src="data.js"></script>
+  <script src="bracket.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
