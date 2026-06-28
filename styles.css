@@ -290,7 +290,7 @@ small { color: var(--muted); }
   .app { padding: 22px 14px 80px; }
 
   /* Lock the bracket columns into place when scrolling horizontally */
-  .board-scroll { scroll-snap-type: x mandatory; scroll-padding-left: 8px; scroll-behavior: smooth; }
+  .board-scroll { scroll-snap-type: x mandatory; scroll-padding-left: 8px; }
   .bhead, .bmatch { scroll-snap-align: start; }
 }
 @media (max-width: 480px) {

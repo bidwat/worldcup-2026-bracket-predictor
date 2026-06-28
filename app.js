@@ -445,8 +445,18 @@
       '<button class="btn" id="shareBtn" type="button">' + ic("fa-solid fa-share-nodes") + " Save &amp; share</button>" +
       '<span class="hint">' + made + "/" + WC.MATCHES.length + " picks" + (complete ? " · complete" : "") + (state.dirty ? " · unsaved" : "") + "</span></div>";
 
+    // Picking re-renders the board; preserve the horizontal scroll position so
+    // the bracket doesn't jump back to the start (notably on mobile).
+    var prevScroll = APP.querySelector(".board-scroll");
+    prevScroll = prevScroll ? { left: prevScroll.scrollLeft, top: prevScroll.scrollTop } : null;
+
     APP.innerHTML = head + sub + boardHtml(resolved, scored, "edit") + savebar;
     bindBoard("edit");
+
+    if (prevScroll) {
+      var sc = APP.querySelector(".board-scroll");
+      if (sc) { sc.scrollLeft = prevScroll.left; sc.scrollTop = prevScroll.top; }
+    }
 
     var nameEl = APP.querySelector("#bracketName");
     nameEl.addEventListener("input", function () { state.editing.name = nameEl.value; state.dirty = true; });
