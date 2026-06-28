@@ -77,6 +77,7 @@
     });
   }
   function ic(cls) { return '<i class="' + cls + '"></i>'; }
+  function isMobile() { return /Android|iPhone|iPad|iPod|Mobile|Silk/i.test(navigator.userAgent || ""); }
   function flagSpan(code) { var t = WC.team(code); return '<span class="flag">' + (t ? t.flag : "🏳️") + "</span>"; }
   function teamName(code) { var t = WC.team(code); return t ? t.name : ""; }
 
@@ -700,23 +701,36 @@
         cy += 16;
       }
 
-      // ---- bracket: Round of 32 -> Semi-finals (the final is the champion above) ----
-      var CW = 228, GAP = 42, HH = 24, SH = 34, CH = HH + 2 * SH;
-      var maxRow = MAX_ROW;
+      // ---- bracket: Round of 16 -> Final (large fonts for mobile) ----
+      function rowsFrom(startKey) {
+        var rows = {}, n = 0;
+        (function rec(id) {
+          var m = WC.matchById(id);
+          if (m.round === startKey) { rows[id] = n++; return rows[id]; }
+          var k = []; ["a", "b"].forEach(function (s) { if (m[s].win != null) k.push(m[s].win); });
+          if (!k.length) { rows[id] = n++; return rows[id]; }
+          var cr = k.map(rec);
+          rows[id] = (Math.min.apply(null, cr) + Math.max.apply(null, cr)) / 2;
+          return rows[id];
+        })(104);
+        return rows;
+      }
+      var rows = rowsFrom("R16"), maxRow = 7;
+      var CW = 232, GAP = 42, HH = 28, SH = 46, CH = HH + 2 * SH;
       var boardW = 3 * (CW + GAP) + CW;
       var footerH = 84;
       var areaX = (W - boardW) / 2, areaY = cy + 22, areaH = H - footerH - areaY;
       var RU = (areaH - CH) / maxRow;
-      function bx(id) { return areaX + ROUND_INDEX[WC.matchById(id).round] * (CW + GAP); }
-      function by(id) { return areaY + ROW_OF[id] * RU; }
-      var matches = WC.MATCHES.filter(function (m) { return m.round !== "F"; });
+      function bx(id) { return areaX + (ROUND_INDEX[WC.matchById(id).round] - 1) * (CW + GAP); }
+      function by(id) { return areaY + rows[id] * RU; }
+      var matches = WC.MATCHES.filter(function (m) { return m.round !== "R32"; });
 
-      // connectors
+      // connectors (skip Round-of-32 feeders — not drawn here)
       ctx.strokeStyle = C.line; ctx.lineWidth = 2; ctx.lineJoin = "round";
       matches.forEach(function (m) {
         ["a", "b"].forEach(function (side) {
           if (m[side].win == null) return;
-          var c = m[side].win;
+          var c = m[side].win; if (rows[c] == null) return;
           var x1 = bx(c) + CW, y1 = by(c) + CH / 2, x2 = bx(m.id), y2 = by(m.id) + CH / 2, mx = (x1 + x2) / 2;
           ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(mx, y1); ctx.lineTo(mx, y2); ctx.lineTo(x2, y2); ctx.stroke();
         });
@@ -725,10 +739,10 @@
       // cards
       matches.forEach(function (m) {
         var x = bx(m.id), y = by(m.id), rm = resolved[m.id], grade = scored.perMatch[m.id];
-        ctx.fillStyle = C.panel; rr(x, y, CW, CH, 12); ctx.fill();
+        ctx.fillStyle = C.panel; rr(x, y, CW, CH, 14); ctx.fill();
         ctx.strokeStyle = C.line; ctx.lineWidth = 1.5; ctx.stroke();
-        txt(m.date, x + 13, y + HH / 2, "600 13px " + SANS, C.muted, "left", "middle");
-        if (WC.isLocked(m.id)) txt("FT", x + CW - 13, y + HH / 2, "800 12px " + SANS, C.good, "right", "middle");
+        txt(WC.round(m.round).name + " · " + m.date, x + 15, y + HH / 2, "700 14px " + SANS, C.muted, "left", "middle");
+        if (WC.isLocked(m.id)) txt("FT", x + CW - 15, y + HH / 2, "800 13px " + SANS, C.good, "right", "middle");
         ctx.strokeStyle = C.line; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(x, y + HH); ctx.lineTo(x + CW, y + HH); ctx.stroke();
         drawSlot(m, "a", x, y + HH, rm, grade, CW, SH);
         drawSlot(m, "b", x, y + HH + SH, rm, grade, CW, SH);
@@ -745,18 +759,18 @@
           else { nameColor = C.muted; }
         } else if (chosen) { bar = C.primary; mark = "✓"; markColor = C.primary2; }
         var cyr = sy + sh / 2;
-        if (bar) { ctx.fillStyle = bar; ctx.fillRect(x, sy, 4, sh); }
-        if (code) txt(WC.team(code).flag, x + 12, cyr, "21px " + FLAG, C.text, "left", "middle");
-        else txt("·", x + 18, cyr, "18px " + SANS, C.muted, "left", "middle");
+        if (bar) { ctx.fillStyle = bar; ctx.fillRect(x, sy, 5, sh); }
+        if (code) txt(WC.team(code).flag, x + 14, cyr, "28px " + FLAG, C.text, "left", "middle");
+        else txt("·", x + 22, cyr, "22px " + SANS, C.muted, "left", "middle");
         var nm = code ? WC.team(code).name : slotLabel(m, side, resolved);
-        var nf = (code ? "700 " : "600 ") + "17px " + SANS;
-        txt(ellip(nm, nf, w - 48 - 20), x + 48, cyr, nf, code ? nameColor : C.muted, "left", "middle");
-        if (mark) txt(mark, x + w - 13, cyr, "800 18px " + SANS, markColor, "right", "middle");
+        var nf = (code ? "700 " : "600 ") + "23px " + SANS;
+        txt(ellip(nm, nf, w - 52 - 22), x + 52, cyr, nf, code ? nameColor : C.muted, "left", "middle");
+        if (mark) txt(mark, x + w - 14, cyr, "800 23px " + SANS, markColor, "right", "middle");
       }
 
-      // footer
-      txt("Make your own bracket", W / 2, H - 52, "700 26px " + SANS, C.text, "center");
-      txt("bidwat.github.io/worldcup-2026-bracket-predictor", W / 2, H - 26, "600 22px " + SANS, C.primary2, "center");
+      // footer — just the short URL, so the link still travels with the image
+      // (Instagram can't auto-attach a tappable link sticker from the web).
+      txt("wc.bidwat.com", W / 2, H - 34, "800 26px " + SANS, C.primary2, "center");
     }
 
     // Make sure the flag webfont is actually fetched (pass a flag glyph so the
@@ -824,8 +838,13 @@
     track("bracket_shared", { complete: WC.isComplete(rec.picks), picks: WC.pickCount(rec.picks) });
     var url = WC.buildShareUrl(rec);
     var champ = WC.champion(rec.picks);
-    var channels = WC.shareChannels(url, rec.name, champ ? teamName(champ) : "");
+    var mobile = isMobile();
+    var channels = WC.shareChannels(url, rec.name, champ ? teamName(champ) : "", mobile);
     var canNative = !!navigator.share;
+
+    var igBtn = mobile
+      ? '<button class="share-btn" data-ch="instagram" id="igShare" type="button"><span class="ic">' + ic("fa-brands fa-instagram") + "</span>Instagram</button>"
+      : "";
 
     openModal(
       '<button class="close-x" aria-label="Close">' + ic("fa-solid fa-xmark") + "</button>" +
@@ -835,6 +854,7 @@
       '<button class="btn primary" id="copyUrl" type="button">' + ic("fa-solid fa-copy") + " Copy</button></div>" +
       '<button class="btn story-cta" id="storyBtn" type="button">' + ic("fa-brands fa-instagram") + " Make a story image (9:16)</button>" +
       '<div class="share-grid">' +
+        igBtn +
         channels.map(function (c) {
           return '<a class="share-btn" data-ch="' + c.key + '" href="' + esc(c.href) + '" target="_blank" rel="noopener">' +
             '<span class="ic">' + ic(SHARE_ICON[c.key] || "fa-solid fa-share-nodes") + "</span>" + esc(c.label) + "</a>";
@@ -843,6 +863,13 @@
       "</div>"
     );
     MODAL_CARD.querySelector("#storyBtn").addEventListener("click", function () { openStoryModal(rec); });
+    var ig = MODAL_CARD.querySelector("#igShare");
+    if (ig) ig.addEventListener("click", function () {
+      copyText(WC.shareMessage(url, rec.name, champ ? teamName(champ) : ""));
+      toast("Copied! Paste it into your Instagram DM.", "good");
+      track("share_channel", { method: "instagram" });
+      setTimeout(function () { try { window.location.href = "instagram://app"; } catch (e) {} }, 250);
+    });
     MODAL_CARD.querySelector("#copyUrl").addEventListener("click", function () {
       track("share_channel", { method: "copy" });
       copyText(url).then(function (ok) { toast(ok ? "Link copied!" : "Press Ctrl+C to copy.", ok ? "good" : "bad"); });

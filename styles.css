@@ -243,6 +243,7 @@ small { color: var(--muted); }
 .share-btn[data-ch="facebook"] .ic { color: #1877f2; }
 .share-btn[data-ch="reddit"] .ic { color: #ff4500; }
 .share-btn[data-ch="twitter"] .ic { color: var(--text); }
+.share-btn[data-ch="instagram"] .ic { color: #e1306c; }
 
 .modal-actions { display: flex; gap: 12px; flex-wrap: wrap; }
 .modal-actions .btn { flex: 1; justify-content: center; }
@@ -276,6 +277,10 @@ small { color: var(--muted); }
   .nav-btn.primary span { display: inline; }
   .section-head h1 { font-size: 20px; }
   .app { padding: 22px 14px 80px; }
+
+  /* Lock the bracket columns into place when scrolling horizontally */
+  .board-scroll { scroll-snap-type: x mandatory; scroll-padding-left: 8px; scroll-behavior: smooth; }
+  .bhead, .bmatch { scroll-snap-align: start; }
 }
 @media (max-width: 480px) {
   .cards { grid-template-columns: 1fr; }

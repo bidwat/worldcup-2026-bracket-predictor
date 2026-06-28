@@ -296,22 +296,31 @@
     return { picks: picks, name: params.n ? decodeURIComponent(params.n) : "" };
   }
 
-  // Social channels. text/url are pre-encoded where each platform needs it.
-  function shareChannels(url, name, championName) {
+  // The plain-text message used for messaging-app shares.
+  function shareMessage(url, name, championName) {
+    return "🏆 " + (name || "My World Cup 2026 bracket") +
+           (championName ? " — I've got " + championName + " lifting the trophy!" : "") +
+           " Make your knockout predictions: " + url;
+  }
+
+  // Social channels. WhatsApp/Telegram are marked mobileOnly — on desktop they
+  // open web pages rather than apps, so callers hide them there.
+  function shareChannels(url, name, championName, mobile) {
     var msg = "🏆 " + (name || "My World Cup 2026 bracket") +
               (championName ? " — I've got " + championName + " lifting the trophy!" : "") +
               " Make your knockout predictions:";
     var u = encodeURIComponent(url);
     var t = encodeURIComponent(msg);
     var tPlusU = encodeURIComponent(msg + " " + url);
-    return [
-      { key: "whatsapp", label: "WhatsApp", icon: "💬", href: "https://wa.me/?text=" + tPlusU },
-      { key: "telegram", label: "Telegram", icon: "✈️", href: "https://t.me/share/url?url=" + u + "&text=" + t },
-      { key: "twitter",  label: "X / Twitter", icon: "𝕏", href: "https://twitter.com/intent/tweet?text=" + t + "&url=" + u },
-      { key: "facebook", label: "Facebook", icon: "📘", href: "https://www.facebook.com/sharer/sharer.php?u=" + u },
-      { key: "reddit",   label: "Reddit", icon: "👽", href: "https://www.reddit.com/submit?url=" + u + "&title=" + t },
-      { key: "email",    label: "Email", icon: "✉️", href: "mailto:?subject=" + encodeURIComponent((name || "My World Cup bracket")) + "&body=" + tPlusU }
+    var all = [
+      { key: "whatsapp", label: "WhatsApp", mobileOnly: true, href: "https://wa.me/?text=" + tPlusU },
+      { key: "telegram", label: "Telegram", mobileOnly: true, href: "https://t.me/share/url?url=" + u + "&text=" + t },
+      { key: "twitter",  label: "X / Twitter", href: "https://twitter.com/intent/tweet?text=" + t + "&url=" + u },
+      { key: "facebook", label: "Facebook", href: "https://www.facebook.com/sharer/sharer.php?u=" + u },
+      { key: "reddit",   label: "Reddit", href: "https://www.reddit.com/submit?url=" + u + "&title=" + t },
+      { key: "email",    label: "Email", href: "mailto:?subject=" + encodeURIComponent((name || "My World Cup bracket")) + "&body=" + tPlusU }
     ];
+    return all.filter(function (c) { return mobile || !c.mobileOnly; });
   }
 
   // ---- Saved brackets (localStorage) ---------------------------------------
@@ -402,6 +411,7 @@
     buildShareUrl: buildShareUrl,
     parseShareHash: parseShareHash,
     shareChannels: shareChannels,
+    shareMessage: shareMessage,
     loadBrackets: loadBrackets,
     upsertBracket: upsertBracket,
     importBracket: importBracket,
