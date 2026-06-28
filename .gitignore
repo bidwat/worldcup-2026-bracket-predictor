@@ -4,6 +4,12 @@ Thumbs.db
 desktop.ini
 *.log
 
+# Local environment (analytics ID etc.)
+.env
+
+# Build output
+_site/
+
 # Local screenshots / scratch
 _shot/
 _*.html

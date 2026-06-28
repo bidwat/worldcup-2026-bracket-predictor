@@ -35,12 +35,13 @@ window.WC_DATA = {
   resultsUrl: "",
 
   // Optional, privacy-friendly usage analytics via Google Analytics 4.
-  // Paste your GA4 Measurement ID (looks like "G-XXXXXXXXXX") to enable:
-  //   • page_view        — counts how many times the site is opened
-  //   • bracket_created  — a new bracket was saved
-  //   • bracket_shared   — the share dialog was opened (with per-channel detail)
+  // Tracks page_view (site opens), bracket_created and bracket_shared.
   // GA4 reports unique visitors and country/city but NOT raw IP addresses.
-  // Leave blank to disable tracking completely (the app loads no GA script).
+  //
+  // Left blank here on purpose — the Measurement ID is injected at deploy time
+  // from the GitHub Actions variable GA4_ID (see scripts/inject-env.mjs), so it
+  // stays out of the committed source. For local analytics, put GA4_ID in .env
+  // and run `npm run inject`. Blank = no GA script loads, nothing is tracked.
   analytics: { ga4Id: "" },
 
   rounds: [

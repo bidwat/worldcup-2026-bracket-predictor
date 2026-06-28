@@ -1,0 +1,11 @@
+{
+  "name": "worldcup-2026-bracket-predictor",
+  "version": "1.0.0",
+  "description": "Frontend-only FIFA World Cup 2026 knockout bracket predictor.",
+  "private": true,
+  "author": "Bidwat Pokhrel",
+  "scripts": {
+    "start": "npx --yes serve .",
+    "inject": "node scripts/inject-env.mjs"
+  }
+}

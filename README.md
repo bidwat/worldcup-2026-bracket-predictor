@@ -1,116 +1,66 @@
 <h1 align="center">🏆 World Cup 2026 — Bracket Predictor</h1>
 
 <p align="center">
-  Predict the FIFA World Cup 2026 knockout bracket, share it with friends through a single short link, and watch the scores settle as the real results come in.
+  Predict the FIFA World Cup 2026 knockout bracket, share it with friends through a single link, and watch the scores settle as the real results come in.
 </p>
 
 <p align="center">
-  <b>Frontend-only</b> · no backend · no accounts · no database<br/>
-  Brackets live in your browser; a shared bracket travels entirely inside the URL.
+  <a href="https://bidwat.github.io/worldcup-2026-bracket-predictor/"><b>▶ Open the app</b></a>
 </p>
 
 ---
 
-## Highlights
+## What it is
 
-- **Real fixtures, always-on live results.** Ships with the actual 2026 knockout draw (Round of 32 → Final) and checks a live results feed **every time the app opens or reloads**, so scores update on their own.
-- **A real bracket, not a list.** A connector-linked tournament tree lays each match next to the two games that feed it, so it's always obvious who advances where.
-- **Tiny share links.** A complete 31-match bracket is encoded into roughly a dozen characters in the URL — the named bracket and every pick, with nothing stored server-side.
-- **Open to view, not to edit.** A shared link opens the bracket as a clean read-only board titled with its name, plus a one-tap *Create your own* to start your bracket.
-- **Save friends' brackets.** Keep everyone's predictions side by side and rank them on the leaderboard.
-- **Light & dark themes**, responsive from phone to desktop, with country flags that render correctly on Windows too.
+A simple, free web app for the World Cup 2026 knockout rounds. Pick who advances from the Round of 32 all the way to the final, give your bracket a name, and send it to your friends. As the tournament plays out, the app shows whose predictions were right — yours and theirs — and ranks everyone on a leaderboard.
 
-## Run it
+Your brackets are saved in your own browser, and a shared bracket is carried entirely inside its link. There's no sign-up and nothing to install.
 
-No build step, no dependencies.
+## How to use it
 
-- **Double-click `index.html`** — it runs straight from the file system, or
-- serve the folder for cleaner share URLs:
-  ```bash
-  npx serve .
-  # or
-  python -m http.server 8000
-  ```
+**1. Build your bracket.** Tap **New bracket**, then click the team you think wins each match. Your pick carries forward round by round, and your predicted champion appears at the top as soon as you reach the final. In a hurry? **Randomize** fills one in for you to tweak.
 
-> An internet connection is used for two optional niceties: the live results feed and two small CDN assets (an icon pack and a flag font). The app remains fully usable offline — flags simply fall back to two-letter codes and results can be entered by hand.
+**2. Name it and share.** Hit **Save & share**, give your bracket a name, and send the link via WhatsApp, Telegram, X, Facebook, Reddit, email, or copy it anywhere. Friends who open the link see your bracket as a read-only board and can save it or build their own.
 
-## How it works
-
-### Building a bracket
-Click a team in any match to advance them; the pick flows forward through every round to the final. Change an earlier game and the path beyond it resets so you re-confirm it. **Randomize** fills an instant bracket to tweak. Your predicted champion shows inline as soon as the final is decided.
-
-### Scoring
-Each pick is graded against the real result. Rounds are weighted so later stages matter more:
+**3. Watch the scores.** The app checks the real results automatically every time you open it. Played matches are graded ✓ or ✗ on every saved bracket, and later rounds matter more:
 
 | Round | Round of 32 | Round of 16 | Quarter-finals | Semi-finals | Final |
 |------:|:-----------:|:-----------:|:--------------:|:-----------:|:-----:|
 | **Points** | 1 | 2 | 4 | 8 | 16 |
 
-Every round contributes the same total (16 points), so a perfect bracket is worth **80**. Once a match is played it locks — a correct or incorrect call is recorded and can't be retro-edited — while un-played rounds stay editable.
+A perfect bracket is worth **80 points**. Once a match is played its result locks in; rounds that haven't been played yet stay editable.
 
-### Sharing
-Everything needed to reconstruct a bracket is packed into the URL hash, so links work on any static host (or `file://`). Built-in buttons share to **WhatsApp, Telegram, X, Facebook, Reddit, and email**, alongside copy-link and the native mobile share sheet. Opening a link shows the bracket read-only with its title and a *Create your own* call to action; recipients can also save it to compare scores.
+**4. Compare.** The **Compare** tab ranks every bracket you've saved — yours and your friends' — by points, so you always know who's winning the pool.
 
-#### Why the link stays short
-Each of the 31 knockout matches is a single positional choice — top slot or bottom slot advances — stored as two bits in canonical bracket order, prefixed with a version byte and base64url-encoded. The bracket's name is the only other thing in the link.
+## Features
 
-## Results feed
+- 🗺️ A real, connector-linked bracket so it's always clear who plays who next
+- 🔗 Tiny share links — the whole bracket fits in the URL, no server involved
+- 👀 Shared links open as a clean read-only board with the bracket's name
+- 💾 Save friends' brackets and rank everyone on a leaderboard
+- 🔄 Live results check on every visit, with round-weighted scoring
+- 🌗 Light and dark themes, responsive on phone and desktop
+- 🏳️ Country flags that display correctly on Windows too
 
-The app checks for live results automatically on every load (and via **Refresh results**), configured in `data.js` under `feed`:
+---
 
-```js
-feed: {
-  type: "thesportsdb",
-  sportsdb: { key: "3", leagueId: 4429, season: "2026", knockoutFrom: "2026-06-28" }
-}
+## Developer notes
+
+Plain static HTML/CSS/JS — no framework, no build step. Three classic scripts load in order: `data.js` (fixtures, teams, config) → `bracket.js` (stateless core: resolve, score, encode/decode, share, storage, live feed) → `app.js` (UI). State lives in `localStorage`; shared state rides in the URL hash.
+
+**Run locally**
+
+```bash
+npm start          # serves the folder (or just open index.html)
 ```
 
-The default source is **TheSportsDB's** free, keyless, CORS-enabled World Cup endpoint. Finished knockout games are matched to the bracket and their winners filled in progressively as rounds settle; common team-name variants (`USA`, `Bosnia-Herzegovina`, `Cote d'Ivoire`, …) are mapped automatically.
+**Live results feed** — configured in `data.js` under `feed`; defaults to TheSportsDB's free, keyless, CORS endpoint (league 4429, season 2026). Finished knockout games are mapped to the bracket progressively. The free key returns a limited sample — drop your own key into `feed.sportsdb.key` for full coverage, or set `feed.type:"json"` and a `resultsUrl` returning `{updated, results:{matchId:teamCode}}`. The **Enter results** dialog is a manual backstop.
 
-- **Coverage:** the free public key returns a limited sample of events. For full coverage, drop your own TheSportsDB key into `feed.sportsdb.key`. Games decided by a penalty shootout are left undecided by the feed.
-- **Custom source:** set `feed.type: "json"` and point `resultsUrl` at any CORS-enabled endpoint returning `{ "updated": "…", "results": { "73": "CAN" } }` (match id → team code).
-- **Manual:** **Enter results** lets you set any winner by hand — handy for a private pool or penalty-shootout games. It re-scores every saved bracket instantly.
+**Analytics** — optional Google Analytics 4 (`page_view`, `bracket_created`, `bracket_shared`). The Measurement ID is **not** committed; it's injected at deploy time from the GitHub Actions **variable** `GA4_ID` (`scripts/inject-env.mjs` fills the `analytics.ga4Id` placeholder in `data.js`). For local analytics, put `GA4_ID=G-…` in a `.env` and run `npm run inject`. Note: a GA4 Measurement ID is inherently visible in the live page — keeping it out of the repo is about hygiene, not secrecy. GA4 reports unique visitors and country/city, not raw IPs.
 
-## Usage analytics (optional)
+**Deploy** — pushing to `main` triggers `.github/workflows/deploy.yml`, which assembles the static files, injects `GA4_ID`, and publishes to GitHub Pages.
 
-The app can report privacy-friendly usage metrics through **Google Analytics 4** — disabled by default. To turn it on, paste your GA4 Measurement ID into `data.js`:
-
-```js
-analytics: { ga4Id: "G-XXXXXXXXXX" }
-```
-
-When set, it tracks:
-
-| Signal | GA event | Answers |
-|--------|----------|---------|
-| Site opened | `page_view` | How many times / unique visitors / country & city |
-| Bracket created | `bracket_created` | How many brackets are built (editor + copies) |
-| Bracket shared | `bracket_shared` + `share_channel` | How often brackets are shared, and via which channel |
-
-With no ID set, **no Google script loads and nothing is tracked**. GA4 reports unique visitors and approximate location (country/city) but **not raw IP addresses** — capturing actual IPs would require a small serverless endpoint, which this project intentionally avoids.
-
-**Getting an ID:** create a free GA4 property at [analytics.google.com](https://analytics.google.com) → add a **Web** data stream for your site URL → copy the **Measurement ID** (`G-…`). If you serve to EU visitors, add a cookie-consent banner to stay GDPR-compliant.
-
-## Project structure
-
-| File | Purpose |
-|------|---------|
-| `index.html` | App shell, theme bootstrap, CDN assets |
-| `styles.css` | Blue theme with light/dark tokens, responsive layout, bracket connectors |
-| `data.js` | Tournament fixtures, teams, round weights, feed config, results |
-| `bracket.js` | Stateless core — resolve, score, encode/decode, share, storage, live feed |
-| `app.js` | Rendering and interaction |
-
-## Tech notes
-
-- Vanilla JavaScript, no framework or build tooling — three classic scripts loaded in order.
-- State persists in `localStorage`; shared state is carried in the URL hash. There is no server component.
-- Country flags use the bundled Twemoji flag font so emoji flags render on Windows, which otherwise shows two-letter codes.
-- Icons are Font Awesome; the live feed is TheSportsDB. Both load over HTTPS from a CDN.
-
-## Updating the tournament data
-
-The bundled bracket reflects the published 2026 knockout draw. If the draw, dates, or venues change, edit the `matches` and `teams` in `data.js`. The `matches` array is in canonical order, which is also the contract used by the share encoding — if you reorder it, bump `CODE_VERSION` in `bracket.js`.
+**Updating tournament data** — edit `matches`/`teams` in `data.js`. The `matches` array is in canonical order, which is also the share-encoding contract; if you reorder it, bump `CODE_VERSION` in `bracket.js`.
 
 ---
 
