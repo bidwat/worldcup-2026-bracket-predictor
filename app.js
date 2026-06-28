@@ -665,88 +665,77 @@
     }
 
     function paint() {
-      // background
-      var g = ctx.createLinearGradient(0, 0, 0, H);
-      g.addColorStop(0, C.bg0); g.addColorStop(1, C.bg1);
-      ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
-      var rg = ctx.createRadialGradient(W * 0.82, -120, 60, W * 0.82, -120, 760);
-      rg.addColorStop(0, "rgba(59,130,246,0.22)"); rg.addColorStop(1, "rgba(59,130,246,0)");
-      ctx.fillStyle = rg; ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = C.bg; ctx.fillRect(0, 0, W, H);
 
-      var cy = 104;
+      var cy = 90;
       try { ctx.letterSpacing = "3px"; } catch (e) {}
-      txt("FIFA WORLD CUP 2026 · KNOCKOUT", W / 2, cy, "700 23px " + SANS, C.primary2, "center");
+      txt("FIFA WORLD CUP 2026 · KNOCKOUT", W / 2, cy, "700 24px " + SANS, C.primary2, "center");
       try { ctx.letterSpacing = "0px"; } catch (e) {}
 
-      cy += 16;
-      var titleFont = "800 56px " + SANS;
-      var tlines = wrap(bracket.name || "My Bracket", titleFont, W - 130, 2);
-      cy += 56;
-      tlines.forEach(function (l) { txt(l, W / 2, cy, titleFont, C.text, "center"); cy += 66; });
-      cy += 8;
+      cy += 14;
+      var titleFont = "800 54px " + SANS;
+      var tlines = wrap(bracket.name || "My Bracket", titleFont, W - 110, 2);
+      cy += 48;
+      tlines.forEach(function (l) { txt(l, W / 2, cy, titleFont, C.text, "center"); cy += 60; });
+      cy += 2;
 
       if (champ) {
         try { ctx.letterSpacing = "2px"; } catch (e) {}
-        txt("PREDICTED CHAMPION", W / 2, cy, "700 22px " + SANS, C.muted, "center");
+        txt("PREDICTED CHAMPION", W / 2, cy, "700 20px " + SANS, C.muted, "center");
         try { ctx.letterSpacing = "0px"; } catch (e) {}
-        cy += 58;
+        cy += 48;
         var flag = WC.team(champ).flag, nm = WC.team(champ).name;
         var nameFont = "800 50px " + SANS, flagFont = "46px " + FLAG;
         ctx.font = flagFont; var fw = ctx.measureText(flag).width;
         ctx.font = nameFont; var nw = ctx.measureText(nm).width;
-        var gap = 20, total = fw + gap + nw, sx = (W - total) / 2;
+        var gap = 18, sx = (W - (fw + gap + nw)) / 2;
         txt(flag, sx, cy, flagFont, C.text, "left", "middle");
         txt(nm, sx + fw + gap, cy, nameFont, C.primary2, "left", "middle");
         var cg = scored.perMatch[104].grade;
-        if (cg !== "pending") { cy += 40; txt(cg === "correct" ? "✓ Champion called" : "✗ Eliminated", W / 2, cy, "700 24px " + SANS, cg === "correct" ? C.good : C.bad, "center"); }
-        cy += 34;
+        if (cg !== "pending") { cy += 32; txt(cg === "correct" ? "✓ Champion called" : "✗ Eliminated", W / 2, cy, "700 22px " + SANS, cg === "correct" ? C.good : C.bad, "center"); cy += 14; }
+        else { cy += 22; }
       } else {
-        cy += 50;
-        txt(WC.pickCount(picks) + " of " + WC.MATCHES.length + " picks made", W / 2, cy, "700 30px " + SANS, C.muted, "center");
-        cy += 24;
+        cy += 42;
+        txt(WC.pickCount(picks) + " of " + WC.MATCHES.length + " picks made", W / 2, cy, "700 28px " + SANS, C.muted, "center");
+        cy += 16;
       }
 
-      // board area
-      var BW = 190, BG = 52, RU = 96, BH = 88;
-      var boardW = 4 * (BW + BG) + BW, boardH = MAX_ROW * RU + BH;
-      function bx(id) { return ROUND_INDEX[WC.matchById(id).round] * (BW + BG); }
-      function by(id) { return ROW_OF[id] * RU; }
-
-      var footerH = 96;
-      var areaX = 24, areaY = cy + 26, areaW = W - 48, areaH = H - footerH - areaY;
-      var scale = Math.min(areaW / boardW, areaH / boardH);
-      var ox = areaX + (areaW - boardW * scale) / 2;
-      var oy = areaY + (areaH - boardH * scale) / 2;
-
-      ctx.save();
-      ctx.translate(ox, oy); ctx.scale(scale, scale);
+      // ---- bracket: Round of 32 -> Semi-finals (the final is the champion above) ----
+      var CW = 228, GAP = 42, HH = 24, SH = 34, CH = HH + 2 * SH;
+      var maxRow = MAX_ROW;
+      var boardW = 3 * (CW + GAP) + CW;
+      var footerH = 84;
+      var areaX = (W - boardW) / 2, areaY = cy + 22, areaH = H - footerH - areaY;
+      var RU = (areaH - CH) / maxRow;
+      function bx(id) { return areaX + ROUND_INDEX[WC.matchById(id).round] * (CW + GAP); }
+      function by(id) { return areaY + ROW_OF[id] * RU; }
+      var matches = WC.MATCHES.filter(function (m) { return m.round !== "F"; });
 
       // connectors
       ctx.strokeStyle = C.line; ctx.lineWidth = 2; ctx.lineJoin = "round";
-      WC.MATCHES.forEach(function (m) {
+      matches.forEach(function (m) {
         ["a", "b"].forEach(function (side) {
           if (m[side].win == null) return;
           var c = m[side].win;
-          var x1 = bx(c) + BW, y1 = by(c) + BH / 2, x2 = bx(m.id), y2 = by(m.id) + BH / 2, mx = (x1 + x2) / 2;
+          var x1 = bx(c) + CW, y1 = by(c) + CH / 2, x2 = bx(m.id), y2 = by(m.id) + CH / 2, mx = (x1 + x2) / 2;
           ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(mx, y1); ctx.lineTo(mx, y2); ctx.lineTo(x2, y2); ctx.stroke();
         });
       });
 
       // cards
-      WC.MATCHES.forEach(function (m) {
+      matches.forEach(function (m) {
         var x = bx(m.id), y = by(m.id), rm = resolved[m.id], grade = scored.perMatch[m.id];
-        ctx.fillStyle = C.panel; rr(x, y, BW, BH, 12); ctx.fill();
+        ctx.fillStyle = C.panel; rr(x, y, CW, CH, 12); ctx.fill();
         ctx.strokeStyle = C.line; ctx.lineWidth = 1.5; ctx.stroke();
-        txt(WC.matchById(m.id).date, x + 12, y + 16, "600 12px " + SANS, C.muted, "left", "middle");
-        if (WC.isLocked(m.id)) txt("FT", x + BW - 12, y + 16, "800 11px " + SANS, C.good, "right", "middle");
-        ctx.strokeStyle = C.line; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(x, y + 24); ctx.lineTo(x + BW, y + 24); ctx.stroke();
-        drawSlot(m, "a", x, y + 24, rm, grade, BW);
-        drawSlot(m, "b", x, y + 56, rm, grade, BW);
-        ctx.strokeStyle = C.line; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(x, y + 56); ctx.lineTo(x + BW, y + 56); ctx.stroke();
+        txt(m.date, x + 13, y + HH / 2, "600 13px " + SANS, C.muted, "left", "middle");
+        if (WC.isLocked(m.id)) txt("FT", x + CW - 13, y + HH / 2, "800 12px " + SANS, C.good, "right", "middle");
+        ctx.strokeStyle = C.line; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(x, y + HH); ctx.lineTo(x + CW, y + HH); ctx.stroke();
+        drawSlot(m, "a", x, y + HH, rm, grade, CW, SH);
+        drawSlot(m, "b", x, y + HH + SH, rm, grade, CW, SH);
+        ctx.strokeStyle = C.line; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(x, y + HH + SH); ctx.lineTo(x + CW, y + HH + SH); ctx.stroke();
       });
-      ctx.restore();
 
-      function drawSlot(m, side, x, sy, rm, grade, w) {
+      function drawSlot(m, side, x, sy, rm, grade, w, sh) {
         var code = rm[side], chosen = picks[m.id] === side;
         var bar = null, nameColor = C.text, mark = null, markColor = C.muted;
         if (grade.actual != null && code) {
@@ -755,24 +744,30 @@
           else if (aw) { mark = "›"; markColor = C.good; }
           else { nameColor = C.muted; }
         } else if (chosen) { bar = C.primary; mark = "✓"; markColor = C.primary2; }
-        var cyr = sy + 16;
-        if (bar) { ctx.fillStyle = bar; ctx.fillRect(x, sy, 3, 32); }
-        if (code) txt(WC.team(code).flag, x + 9, cyr, "19px " + FLAG, C.text, "left", "middle");
-        else txt("·", x + 14, cyr, "18px " + SANS, C.muted, "left", "middle");
+        var cyr = sy + sh / 2;
+        if (bar) { ctx.fillStyle = bar; ctx.fillRect(x, sy, 4, sh); }
+        if (code) txt(WC.team(code).flag, x + 12, cyr, "21px " + FLAG, C.text, "left", "middle");
+        else txt("·", x + 18, cyr, "18px " + SANS, C.muted, "left", "middle");
         var nm = code ? WC.team(code).name : slotLabel(m, side, resolved);
-        var nf = (code ? "700 " : "600 ") + "14px " + SANS;
-        txt(ellip(nm, nf, w - 40 - 16), x + 38, cyr, nf, code ? nameColor : C.muted, "left", "middle");
-        if (mark) txt(mark, x + w - 11, cyr, "800 14px " + SANS, markColor, "right", "middle");
+        var nf = (code ? "700 " : "600 ") + "17px " + SANS;
+        txt(ellip(nm, nf, w - 48 - 20), x + 48, cyr, nf, code ? nameColor : C.muted, "left", "middle");
+        if (mark) txt(mark, x + w - 13, cyr, "800 18px " + SANS, markColor, "right", "middle");
       }
 
       // footer
-      txt("Make your own bracket", W / 2, H - 58, "700 25px " + SANS, C.text, "center");
-      txt("bidwat.github.io/worldcup-2026-bracket-predictor", W / 2, H - 30, "600 21px " + SANS, C.primary2, "center");
+      txt("Make your own bracket", W / 2, H - 52, "700 26px " + SANS, C.text, "center");
+      txt("bidwat.github.io/worldcup-2026-bracket-predictor", W / 2, H - 26, "600 22px " + SANS, C.primary2, "center");
     }
 
-    // Make sure the flag webfont is ready, then paint.
+    // Make sure the flag webfont is actually fetched (pass a flag glyph so the
+    // unicode-range face loads), then paint.
+    var sample = champ ? WC.team(champ).flag : "🇧🇷";
     var ready = (document.fonts && document.fonts.load)
-      ? Promise.all([document.fonts.load('19px "Twemoji Country Flags"'), document.fonts.ready]).catch(function () {})
+      ? Promise.all([
+          document.fonts.load('21px "Twemoji Country Flags"', sample),
+          document.fonts.load('46px "Twemoji Country Flags"', sample),
+          document.fonts.ready
+        ]).catch(function () {})
       : Promise.resolve();
     return ready.then(function () { paint(); return canvas; });
   }
