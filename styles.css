@@ -188,6 +188,18 @@ small { color: var(--muted); }
 .bslot.advanced { border-left-color: color-mix(in srgb, var(--good) 50%, transparent); }
 .bslot.advanced .mk { color: var(--good); font-size: 9px; }
 .bslot.elim { opacity: .42; }
+.bslot.tbd-pick { cursor: pointer; }
+.bslot.tbd-pick .nm { color: var(--text); font-style: normal; }
+.bslot.tbd-pick .mk { color: var(--primary-2); }
+.bslot.tbd-pick:hover { background: var(--primary-soft); border-left-color: var(--primary); }
+
+/* Two-flag chooser popover for an undecided slot */
+.pick-pop { position: fixed; z-index: 50; min-width: 190px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow); padding: 8px; animation: pop .14s ease; }
+.pick-pop-title { font-size: 10.5px; text-transform: uppercase; letter-spacing: .7px; color: var(--muted); font-weight: 800; padding: 4px 8px 8px; }
+.pick-pop-opt { display: flex; align-items: center; gap: 11px; width: 100%; background: var(--bg-soft); border: 1px solid var(--line-soft); border-radius: 9px; padding: 10px 12px; font-weight: 700; text-align: left; color: var(--text); }
+.pick-pop-opt + .pick-pop-opt { margin-top: 6px; }
+.pick-pop-opt:hover { border-color: var(--primary); background: var(--primary-soft); }
+.pick-pop-opt .flag { font-size: 22px; }
 
 /* ---------- Save bar / CTA ---------- */
 .savebar { position: sticky; bottom: 0; z-index: 20; margin-top: 18px; background: linear-gradient(180deg, transparent, var(--bg) 45%); padding: 18px 0 8px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }

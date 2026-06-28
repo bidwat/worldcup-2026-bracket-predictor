@@ -170,6 +170,7 @@
 
   // ============================================================== RENDER
   function render() {
+    closePopover();
     setNavActive(); renderDataStrip(); renderFooter(); syncThemeIcon();
     if (state.view === "editor") renderEditor();
     else if (state.view === "readonly") renderReadonly();
@@ -255,12 +256,25 @@
     }
 
     var editable = mode === "edit" && code && !locked;
+
+    // A still-undecided slot ("X vs. Y winner") becomes selectable once its
+    // feeder match has both participants — i.e. the previous round is filled.
+    // Clicking it opens a two-flag popover to choose who advances.
+    var tbdChild = null;
+    if (!code && mode === "edit" && m[side].win != null) {
+      var cr = resolved[m[side].win];
+      if (cr && cr.a && cr.b) tbdChild = m[side].win;
+    }
+
     if (editable) classes.push("pickable");
+    if (tbdChild != null) { classes.push("pickable", "tbd-pick"); mk = ic("fa-solid fa-circle-chevron-down"); }
 
     var fullLabel = code ? teamName(code) : slotLabel(m, side, resolved);
     var label = esc(fullLabel);
+    var enabled = editable || tbdChild != null;
     return '<button class="' + classes.join(" ") + '" data-side="' + side + '" data-mid="' + m.id + '"' +
-      ' title="' + label + '"' + (editable ? "" : " disabled") + ">" +
+      (tbdChild != null ? ' data-tbd="1" data-child="' + tbdChild + '"' : "") +
+      ' title="' + label + '"' + (enabled ? "" : " disabled") + ">" +
       (code ? flagSpan(code) : '<span class="flag">·</span>') +
       '<span class="nm">' + label + "</span>" +
       '<span class="mk">' + mk + "</span></button>";
@@ -464,8 +478,59 @@
   function bindBoard(mode) {
     if (mode !== "edit") return;
     APP.querySelectorAll(".bslot.pickable").forEach(function (sEl) {
-      sEl.addEventListener("click", function () { pick(parseInt(sEl.dataset.mid, 10), sEl.dataset.side); });
+      sEl.addEventListener("click", function () {
+        if (sEl.dataset.tbd === "1") {
+          var childId = parseInt(sEl.dataset.child, 10);
+          var cr = WC.resolve(state.editing.picks)[childId];
+          openPickPopover(sEl, childId, [{ side: "a", code: cr.a }, { side: "b", code: cr.b }]);
+        } else {
+          pick(parseInt(sEl.dataset.mid, 10), sEl.dataset.side);
+        }
+      });
     });
+  }
+
+  // Floating two-flag chooser for an undecided slot.
+  var _popEl = null, _popOutside = null, _popEsc = null;
+  function closePopover() {
+    if (_popEl) { _popEl.remove(); _popEl = null; }
+    if (_popOutside) { document.removeEventListener("click", _popOutside, true); _popOutside = null; }
+    if (_popEsc) { document.removeEventListener("keydown", _popEsc); _popEsc = null; }
+  }
+  function openPickPopover(anchorEl, childId, opts) {
+    closePopover();
+    var pop = document.createElement("div");
+    pop.className = "pick-pop";
+    pop.innerHTML = '<div class="pick-pop-title">Who advances?</div>' +
+      opts.map(function (o) {
+        return '<button class="pick-pop-opt" type="button" data-side="' + o.side + '">' +
+          flagSpan(o.code) + "<span>" + esc(teamName(o.code)) + "</span></button>";
+      }).join("");
+    document.body.appendChild(pop);
+    _popEl = pop;
+
+    var r = anchorEl.getBoundingClientRect();
+    var pw = pop.offsetWidth, ph = pop.offsetHeight;
+    var left = Math.max(8, Math.min(r.left, window.innerWidth - pw - 8));
+    var top = r.bottom + 6;
+    if (top + ph > window.innerHeight - 8) top = Math.max(8, r.top - ph - 6);
+    pop.style.left = left + "px";
+    pop.style.top = top + "px";
+
+    pop.querySelectorAll(".pick-pop-opt").forEach(function (b) {
+      b.addEventListener("click", function (e) {
+        e.stopPropagation();
+        var side = b.dataset.side;
+        closePopover();
+        pick(childId, side);
+      });
+    });
+    _popOutside = function (e) { if (_popEl && !_popEl.contains(e.target)) closePopover(); };
+    _popEsc = function (e) { if (e.key === "Escape") closePopover(); };
+    setTimeout(function () {
+      document.addEventListener("click", _popOutside, true);
+      document.addEventListener("keydown", _popEsc);
+    }, 0);
   }
 
   function randomize() {
