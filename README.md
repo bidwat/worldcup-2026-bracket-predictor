@@ -37,6 +37,7 @@ A perfect bracket is worth **80 points**. Once a match is played its result lock
 - 🗺️ A real, connector-linked bracket so it's always clear who plays who next
 - 🔗 Tiny share links — the whole bracket fits in the URL, no server involved
 - 👀 Shared links open as a clean read-only board with the bracket's name
+- 📸 One-tap Instagram-story image (9:16) of your bracket, ready to post
 - 💾 Save friends' brackets and rank everyone on a leaderboard
 - 🔄 Live results check on every visit, with round-weighted scoring
 - 🌗 Light and dark themes, responsive on phone and desktop
