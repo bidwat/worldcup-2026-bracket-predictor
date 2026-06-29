@@ -259,10 +259,10 @@ small { color: var(--muted); }
 .modal-actions { display: flex; gap: 12px; flex-wrap: wrap; }
 .modal-actions .btn { flex: 1; justify-content: center; }
 
-.story-cta { width: 100%; justify-content: center; margin-bottom: 14px; background: linear-gradient(125deg, #feda75, #fa7e1e 28%, #d62976 58%, #962fbf 80%, #4f5bd5); color: #fff; border: 0; }
-.story-cta:hover { filter: brightness(1.05); border: 0; }
 .story-wrap { display: flex; justify-content: center; align-items: center; min-height: 320px; margin: 4px 0 18px; }
+.story-wrap.share-preview { min-height: 200px; }
 .story-img { max-height: 64vh; width: auto; border-radius: 14px; box-shadow: var(--shadow); display: block; }
+.share-preview .story-img { max-height: 42vh; }
 .story-spin { font-size: 30px; color: var(--primary-2); }
 .results-list { display: flex; flex-direction: column; gap: 9px; max-height: 52vh; overflow: auto; margin: 10px 0 18px; }
 .result-row { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; background: var(--bg-soft); border: 1px solid var(--line-soft); border-radius: var(--radius-sm); padding: 9px 11px; font-size: 13px; }

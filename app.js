@@ -827,103 +827,95 @@
     return ready.then(function () { paint(); return canvas; });
   }
 
-  function openStoryModal(bracket) {
-    openModal(
-      '<button class="close-x" aria-label="Close">' + ic("fa-solid fa-xmark") + "</button>" +
-      "<h3>Story image</h3>" +
-      '<p class="sub" id="storyMsg">Rendering your 9:16 image…</p>' +
-      '<div class="story-wrap" id="storyWrap"><div class="story-spin">' + ic("fa-solid fa-spinner fa-spin") + "</div></div>" +
-      '<div class="modal-actions" id="storyActions"></div>'
-    );
-    generateStoryImage(bracket).then(function (canvas) {
-      track("story_image", { action: "generated" });
-      var dataUrl = canvas.toDataURL("image/png");
-      MODAL_CARD.querySelector("#storyWrap").innerHTML = '<img class="story-img" alt="World Cup bracket story image" src="' + dataUrl + '" />';
-      MODAL_CARD.querySelector("#storyMsg").textContent = "Save it, then add it to your Instagram story — or share anywhere.";
-      var fname = ((bracket.name || "my-bracket").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "my-bracket") + "-worldcup-2026.png";
-      var actions = MODAL_CARD.querySelector("#storyActions");
-      actions.innerHTML = '<button class="btn" id="storyDownload" type="button">' + ic("fa-solid fa-download") + " Download</button>";
-      MODAL_CARD.querySelector("#storyDownload").addEventListener("click", function () {
-        var a = document.createElement("a"); a.href = dataUrl; a.download = fname;
-        document.body.appendChild(a); a.click(); a.remove();
-        track("story_image", { action: "download" });
-      });
-      canvas.toBlob(function (blob) {
-        if (!blob || !navigator.canShare) return;
-        try {
-          var file = new File([blob], fname, { type: "image/png" });
-          if (!navigator.canShare({ files: [file] })) return;
-          var sb = document.createElement("button");
-          sb.className = "btn primary"; sb.type = "button";
-          sb.innerHTML = ic("fa-solid fa-share-nodes") + " Share";
-          sb.addEventListener("click", function () {
-            navigator.share({ files: [file], title: bracket.name || "My World Cup 2026 bracket" })
-              .then(function () { track("story_image", { action: "share" }); }).catch(function () {});
-          });
-          actions.insertBefore(sb, actions.firstChild);
-        } catch (e) {}
-      }, "image/png");
-    }).catch(function () {
-      MODAL_CARD.querySelector("#storyMsg").textContent = "Sorry — couldn’t generate the image.";
-      MODAL_CARD.querySelector("#storyWrap").innerHTML = "";
-    });
-  }
-
   // ------------------------------------------------------------ SHARE
   var SHARE_ICON = {
     whatsapp: "fa-brands fa-whatsapp", telegram: "fa-brands fa-telegram",
     twitter: "fa-brands fa-x-twitter", facebook: "fa-brands fa-facebook-f",
     reddit: "fa-brands fa-reddit-alien", email: "fa-solid fa-envelope"
   };
+
+  // Link-only channel buttons, used on desktop / when the device can't share
+  // an image file through the native sheet.
+  function linkChannelsHtml(url, name, champ, mobile) {
+    return WC.shareChannels(url, name, champ ? teamName(champ) : "", mobile).map(function (c) {
+      return '<a class="share-btn" data-ch="' + c.key + '" href="' + esc(c.href) + '" target="_blank" rel="noopener">' +
+        '<span class="ic">' + ic(SHARE_ICON[c.key] || "fa-solid fa-share-nodes") + "</span>" + esc(c.label) + "</a>";
+    }).join("");
+  }
+  function wireChannelTracking(scope) {
+    scope.querySelectorAll(".share-btn[data-ch]").forEach(function (el) {
+      el.addEventListener("click", function () { track("share_channel", { method: el.dataset.ch }); });
+    });
+  }
+
   function openShareModal(rec) {
     track("bracket_shared", { complete: WC.isComplete(rec.picks), picks: WC.pickCount(rec.picks) });
     var url = WC.buildShareUrl(rec);
     var champ = WC.champion(rec.picks);
     var mobile = isMobile();
-    var channels = WC.shareChannels(url, rec.name, champ ? teamName(champ) : "", mobile);
-    var canNative = !!navigator.share;
-
-    var igBtn = mobile
-      ? '<button class="share-btn" data-ch="instagram" id="igShare" type="button"><span class="ic">' + ic("fa-brands fa-instagram") + "</span>Instagram</button>"
-      : "";
+    var msg = WC.shareMessage(url, rec.name, champ ? teamName(champ) : "");
+    var fname = ((rec.name || "my-bracket").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "my-bracket") + "-worldcup-2026.png";
 
     openModal(
       '<button class="close-x" aria-label="Close">' + ic("fa-solid fa-xmark") + "</button>" +
       "<h3>Share “" + esc(rec.name) + "”</h3>" +
-      '<p class="sub">The whole bracket is packed into this link — no account, no server. It opens as a read-only board your friends can save or beat.</p>' +
+      '<p class="sub">Send your bracket as an image with its link — to WhatsApp, Instagram, anywhere. Friends open the link and play along.</p>' +
+      '<div class="story-wrap share-preview" id="shareImg"><div class="story-spin">' + ic("fa-solid fa-spinner fa-spin") + "</div></div>" +
       '<div class="urlbox"><input id="shareUrl" readonly value="' + esc(url) + '" />' +
-      '<button class="btn primary" id="copyUrl" type="button">' + ic("fa-solid fa-copy") + " Copy</button></div>" +
-      '<button class="btn story-cta" id="storyBtn" type="button">' + ic("fa-brands fa-instagram") + " Make a story image (9:16)</button>" +
-      '<div class="share-grid">' +
-        igBtn +
-        channels.map(function (c) {
-          return '<a class="share-btn" data-ch="' + c.key + '" href="' + esc(c.href) + '" target="_blank" rel="noopener">' +
-            '<span class="ic">' + ic(SHARE_ICON[c.key] || "fa-solid fa-share-nodes") + "</span>" + esc(c.label) + "</a>";
-        }).join("") +
-        (canNative ? '<button class="share-btn" data-ch="more" id="nativeShare" type="button"><span class="ic">' + ic("fa-solid fa-ellipsis") + "</span>More…</button>" : "") +
-      "</div>"
+      '<button class="btn" id="copyUrl" type="button">' + ic("fa-solid fa-copy") + " Copy link</button></div>" +
+      '<div class="modal-actions" id="shareActions"></div>' +
+      '<div class="share-grid" id="shareGrid"></div>'
     );
-    MODAL_CARD.querySelector("#storyBtn").addEventListener("click", function () { openStoryModal(rec); });
-    var ig = MODAL_CARD.querySelector("#igShare");
-    if (ig) ig.addEventListener("click", function () {
-      copyText(WC.shareMessage(url, rec.name, champ ? teamName(champ) : ""));
-      toast("Copied! Paste it into your Instagram DM.", "good");
-      track("share_channel", { method: "instagram" });
-      setTimeout(function () { try { window.location.href = "instagram://app"; } catch (e) {} }, 250);
-    });
+
     MODAL_CARD.querySelector("#copyUrl").addEventListener("click", function () {
       track("share_channel", { method: "copy" });
       copyText(url).then(function (ok) { toast(ok ? "Link copied!" : "Press Ctrl+C to copy.", ok ? "good" : "bad"); });
     });
     MODAL_CARD.querySelector("#shareUrl").addEventListener("focus", function (e) { e.target.select(); });
-    MODAL_CARD.querySelectorAll(".share-btn[data-ch]").forEach(function (el) {
-      if (el.dataset.ch === "more") return;
-      el.addEventListener("click", function () { track("share_channel", { method: el.dataset.ch }); });
-    });
-    var nb = MODAL_CARD.querySelector("#nativeShare");
-    if (nb) nb.addEventListener("click", function () {
-      track("share_channel", { method: "native" });
-      navigator.share({ title: rec.name, text: "My World Cup 2026 bracket", url: url }).catch(function () {});
+
+    var imgWrap = MODAL_CARD.querySelector("#shareImg");
+    var actions = MODAL_CARD.querySelector("#shareActions");
+    var grid = MODAL_CARD.querySelector("#shareGrid");
+    function showLinkChannels() { grid.innerHTML = linkChannelsHtml(url, rec.name, champ, mobile); wireChannelTracking(grid); }
+
+    generateStoryImage(rec).then(function (canvas) {
+      track("story_image", { action: "generated" });
+      var dataUrl = canvas.toDataURL("image/png");
+      imgWrap.innerHTML = '<img class="story-img" alt="World Cup bracket image" src="' + dataUrl + '" />';
+
+      function download() {
+        var a = document.createElement("a"); a.href = dataUrl; a.download = fname;
+        document.body.appendChild(a); a.click(); a.remove();
+        track("story_image", { action: "download" });
+      }
+
+      canvas.toBlob(function (blob) {
+        var file = null;
+        try { if (blob) file = new File([blob], fname, { type: "image/png" }); } catch (e) {}
+        var canShareImg = !!(file && navigator.canShare && navigator.canShare({ files: [file] }));
+
+        if (canShareImg) {
+          // One native share carrying BOTH the image and the link — the system
+          // sheet shows every app icon (WhatsApp, Instagram, …).
+          actions.innerHTML =
+            '<button class="btn primary" id="shareNative" type="button">' + ic("fa-solid fa-share-nodes") + " Share image + link</button>" +
+            '<button class="btn" id="dlImg" type="button">' + ic("fa-solid fa-download") + " Save image</button>";
+          MODAL_CARD.querySelector("#shareNative").addEventListener("click", function () {
+            navigator.share({ files: [file], text: msg, title: rec.name || "My World Cup 2026 bracket" })
+              .then(function () { track("share_channel", { method: "native_image" }); }).catch(function () {});
+          });
+          MODAL_CARD.querySelector("#dlImg").addEventListener("click", download);
+        } else {
+          // Desktop / no file-share: save the image, copy the link, and offer
+          // link-only buttons for the web platforms.
+          actions.innerHTML = '<button class="btn primary" id="dlImg" type="button">' + ic("fa-solid fa-download") + " Save image</button>";
+          MODAL_CARD.querySelector("#dlImg").addEventListener("click", download);
+          showLinkChannels();
+        }
+      }, "image/png");
+    }).catch(function () {
+      imgWrap.innerHTML = '<p class="sub" style="margin:0">Couldn’t render the image — you can still share the link below.</p>';
+      showLinkChannels();
     });
   }
 
